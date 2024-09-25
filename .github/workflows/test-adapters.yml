@@ -39,7 +39,13 @@ jobs:
         run: pip install PyYAML
       - id: get-changes
         run: |
-          CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
+          BEFORE_COMMIT=${{ github.event.before }}
+          if [ "$BEFORE_COMMIT" = "0000000000000000000000000000000000000000" ]; then
+            echo "Detected first commit or new branch. Using HEAD^ for git diff."
+            BEFORE_COMMIT="HEAD^"
+          fi
+
+          CHANGED_FILES=$(git diff --name-only $BEFORE_COMMIT ${{ github.sha }})
           echo "Changed files:"
           echo "$CHANGED_FILES"
           ADAPTERS=$(echo "$CHANGED_FILES" | grep -oP 'biocypher_metta/adapters/\K[^/]+(?=_adapter\.py)' | sort -u | tr '\n' ',' | sed 's/,$//')
