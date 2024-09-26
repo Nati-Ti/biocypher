@@ -87,6 +87,7 @@ jobs:
             echo "No changes detected"
           fi
           echo "changes_detected=$CHANGES_DETECTED" >> $GITHUB_OUTPUT
+
   prepare_config:
     needs: determine_changes
     runs-on: ubuntu-latest
@@ -106,7 +107,6 @@ jobs:
           else
             echo "No adapter changes detected. Using sample config."
             cp config/adapters_config_sample.yaml config/test_config.yaml
-          fi
       - uses: actions/upload-artifact@v3
         with:
           name: test-config
@@ -178,31 +178,15 @@ jobs:
                 echo "Running all adapters with changed writer: $CURRENT_WRITER"
                 poetry run python create_knowledge_graph.py --output-dir output --adapters-config config/adapters_config_sample.yaml --dbsnp-rsids aux_files/ensembl_to_hgnc.pkl --dbsnp-pos aux_files/hgnc_to_ensembl.pkl --writer-type $CURRENT_WRITER
               else
-                if [ "$CONFIG_CHANGED" == "true" ]; then
-                  echo "Running changed config parts with unchanged writer: $CURRENT_WRITER"
-                  poetry run python create_knowledge_graph.py --output-dir output --adapters-config config/test_config.yaml --dbsnp-rsids aux_files/ensembl_to_hgnc.pkl --dbsnp-pos aux_files/hgnc_to_ensembl.pkl --writer-type $CURRENT_WRITER
-                else
-                  echo "Skipping unchanged writer: $CURRENT_WRITER"
-                fi
+                echo "Skipping writer $CURRENT_WRITER since no changes related to this writer were detected"
               fi
-            elif [ -n "$CHANGED_ADAPTERS" ] || [ "$CONFIG_CHANGED" == "true" ]; then
-              echo "Running changed adapters or config with writer: $CURRENT_WRITER"
+            elif [ -n "$CHANGED_ADAPTERS" ] && [ "$CONFIG_CHANGED" == "true" ]; then
+              echo "Running changed adapters with writer: $CURRENT_WRITER due to both adapter and config changes"
               poetry run python create_knowledge_graph.py --output-dir output --adapters-config config/test_config.yaml --dbsnp-rsids aux_files/ensembl_to_hgnc.pkl --dbsnp-pos aux_files/hgnc_to_ensembl.pkl --writer-type $CURRENT_WRITER
             else
-              echo "No relevant changes detected for this writer. Skipping."
+              echo "Skipping writer $CURRENT_WRITER since no relevant changes were detected"
             fi
-      - name: Update ontology cache
-        if: always()
-        run: |
-          if [ -d "ontology_dataset_cache" ]; then
-            echo "Updating ontology cache"
-            find ontology_dataset_cache -type f \( -name "*.owl" -o -name "*_meta.json" \) -exec md5sum {} \; > ontology_dataset_cache_md5.txt
-          else
-            echo "No ontology_dataset_cache directory found"
-          fi
-      - name: Upload updated cache
-        if: always()
-        uses: actions/cache/save@v3
+      - uses: actions/upload-artifact@v3
         with:
-          path: ontology_dataset_cache
-          key: ${{ runner.os }}-ontology-${{ hashFiles('ontology_dataset_cache_md5.txt') }}
+          name: output
+          path: output
