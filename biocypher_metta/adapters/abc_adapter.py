@@ -1,4 +1,6 @@
 # Author Abdulrahman S. Omar <xabush@singularitynet.io>
+# Author Abdulrahman S. Omar <xabush@singularitynet.io>
+
 from biocypher_metta.adapters import Adapter
 import pickle
 import csv
