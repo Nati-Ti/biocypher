@@ -5,6 +5,7 @@
 # Author Abdulrahman S. Omar <xabush@singularitynet.io>
 # Author Abdulrahman S. Omar <xabush@singularitynet.io>
 # Author Abdulrahman S. Omar <xabush@singularitynet.io>
+# Author Abdulrahman S. Omar <xabush@singularitynet.io>
 
 from biocypher_metta.adapters import Adapter
 import pickle
@@ -41,6 +42,7 @@ class ABCAdapter(Adapter):
         self.source = "ABC"
         self.source_url = "https://forgedb.cancer.gov/api/abc/v1.0/abc.forgedb.csv.gz"
         super(ABCAdapter, self).__init__(write_properties, add_provenance)
+        
 
     def get_edges(self):
         with gzip.open(self.file_path, "rt") as fp:
