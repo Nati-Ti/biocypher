@@ -1,4 +1,4 @@
-name: Test8
+name: Test9
 
 on:
   push:
@@ -91,6 +91,7 @@ jobs:
           else
             echo "No adapter changes detected. Using sample config."
             cp config/adapters_config_sample.yaml config/test_config.yaml
+          fi
       - uses: actions/upload-artifact@v3
         with:
           name: test-config
