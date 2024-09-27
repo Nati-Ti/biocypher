@@ -78,25 +78,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-
+  
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v3
         with:
           python-version: 3.9
-
+  
       - name: Install PyYAML
         run: pip install PyYAML
-
+  
       - name: Prepare config
         run: |
-          if [ -n "${{ needs.determine_changes.outputs.changed_adapters }}" ] || [ "${{ needs.determine_changes.outputs.config_changed }}" == "true" ]; then
+          if [ -n "abc" ] || [ "false" = "true" ]; then
             echo "Preparing test config for changed adapters or config"
-            python .github/scripts/prepare_config.py "${{ needs.determine_changes.outputs.changed_adapters }}" "${{ needs.determine_changes.outputs.config_changed }}" "${{ needs.determine_changes.outputs.changed_config_items }}"
+            python .github/scripts/prepare_config.py "abc" "false" ""
           else
             echo "No adapter changes detected. Using sample config."
             cp config/adapters_config_sample.yaml config/test_config.yaml
           fi
-
+  
       - uses: actions/upload-artifact@v3
         with:
           name: test-config
