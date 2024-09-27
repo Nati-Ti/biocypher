@@ -1,4 +1,4 @@
-name: Test18
+name: Test19
 
 on:
   push:
@@ -88,11 +88,12 @@ jobs:
 
       - name: Prepare config
         run: |
-          if [ -n "${{ needs.determine_changes.outputs.changed_adapters }}" ] || [ "${{ needs.determine_changes.outputs.config_changed }}" == "true" ]; then
-            echo "Preparing test config for changed adapters or config"
+          if [ -n "${{ needs.determine_changes.outputs.changed_writers }}" ] || [ "${{ needs.determine_changes.outputs.config_changed }}" == "true" ]; then
+            echo "Preparing config for changed writers or config"
+            # Always use the changed config for the current writer type when the writer changes
             python .github/scripts/prepare_config.py "${{ needs.determine_changes.outputs.changed_adapters }}" "${{ needs.determine_changes.outputs.config_changed }}" "${{ needs.determine_changes.outputs.changed_config_items }}"
           else
-            echo "No adapter changes detected. Using sample config."
+            echo "No writer or config changes detected. Using sample config."
             cp config/adapters_config_sample.yaml config/test_config.yaml
           fi
 
