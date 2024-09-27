@@ -1,20 +1,22 @@
-name: Test 20
+name: Test 21
+
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
     paths:
-      - 'biocypher_metta/adapters/**'
-      - 'biocypher_metta/*.py'
-      - 'config/adapters_config_sample.yaml'
-      - 'create_knowledge_graph.py'
+      - "biocypher_metta/adapters/**"
+      - "biocypher_metta/*.py"
+      - "config/adapters_config_sample.yaml"
+      - "create_knowledge_graph.py"
+
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
     paths:
-      - 'biocypher_metta/adapters/**'
-      - 'biocypher_metta/*.py'
-      - 'config/adapters_config_sample.yaml'
-      - 'create_knowledge_graph.py'
+      - "biocypher_metta/adapters/**"
+      - "biocypher_metta/*.py"
+      - "config/adapters_config_sample.yaml"
+      - "create_knowledge_graph.py"
 
 jobs:
   determine_changes:
@@ -31,12 +33,15 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: 3.9
+
       - name: Install PyYAML
         run: pip install PyYAML
+
       - id: get-changes
         run: |
           CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
@@ -76,12 +81,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: 3.9
+
       - name: Install PyYAML
         run: pip install PyYAML
+
       - name: Prepare config
         run: |
           if [ -n "${{ needs.determine_changes.outputs.changed_adapters }}" ] || [ "${{ needs.determine_changes.outputs.config_changed }}" == "true" ]; then
@@ -105,19 +113,19 @@ jobs:
         writer-type: [metta, neo4j, prolog]
     steps:
       - uses: actions/checkout@v3
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: 3.9
+
       - uses: actions/cache@v3
         with:
           path: |
             ~/.cache/pypoetry
             ~/.cache/pip
           key: ${{ runner.os }}-poetry-${{ hashFiles('**/poetry.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-poetry-
-      
+
       - name: Install dependencies
         run: |
           pip install poetry
@@ -126,6 +134,10 @@ jobs:
         with:
           name: test-config
           path: config
+
+      - name: Create output directory
+        run: mkdir -p output
+
       - name: Run tasks
         run: |
           CHANGED_WRITERS="${{ needs.determine_changes.outputs.changed_writers }}"
@@ -141,19 +153,22 @@ jobs:
           echo "Config changed: $CONFIG_CHANGED"
           echo "Main script changed: $MAIN_SCRIPT_CHANGED"
           if [ "$MAIN_SCRIPT_CHANGED" == "true" ]; then
-            echo "Running with full sample config due to main script change"
-            poetry run python create_knowledge_graph.py --output-dir output --adapters-config config/adapters_config_sample.yaml --dbsnp-rsids aux_files/ensembl_to_hgnc.pkl --dbsnp-pos aux_files/hgnc_to_ensembl.pkl --writer-type $CURRENT_WRITER
+          echo "Running with full sample config due to main script change"
+          poetry run python create_knowledge_graph.py --output-dir output --adapters-config config/adapters_config_sample.yaml --dbsnp-rsids aux_files/ensembl_to_hgnc.pkl --dbsnp-pos aux_files/hgnc_to_ensembl.pkl --writer-type $CURRENT_WRITER
           elif [ -n "$CHANGED_WRITERS" ]; then
-            if [[ $CHANGED_WRITERS == *"$CURRENT_WRITER"* ]] || [ "$CHANGED_WRITERS" == "$ALL_WRITERS" ]; then
+          # If both writer and config are changed, we have to run all adapters first
+          if [ "$CONFIG_CHANGED" == "true" ]; then
+              echo "Both writer and config changed. Running all adapters due to writer change."
+              poetry run python create_knowledge_graph.py --output-dir output --adapters-config config/test_config.yaml --dbsnp-rsids aux_files/ensembl_to_hgnc.pkl --dbsnp-pos aux_files/hgnc_to_ensembl.pkl --writer-type $CURRENT_WRITER
+          elif [[ $CHANGED_WRITERS == *"$CURRENT_WRITER"* ]] || [ "$CHANGED_WRITERS" == "$ALL_WRITERS" ]; then
               echo "Running all adapters with changed writer: $CURRENT_WRITER"
               poetry run python create_knowledge_graph.py --output-dir output --adapters-config config/test_config.yaml --dbsnp-rsids aux_files/ensembl_to_hgnc.pkl --dbsnp-pos aux_files/hgnc_to_ensembl.pkl --writer-type $CURRENT_WRITER
-            else
-              echo "Skipping unchanged writer: $CURRENT_WRITER"
-            fi
-          elif [ -n "$CHANGED_ADAPTERS" ] || [ "$CONFIG_CHANGED" == "true" ]; then
-            echo "Running changed adapters or config with writer: $CURRENT_WRITER"
-            poetry run python create_knowledge_graph.py --output-dir output --adapters-config config/test_config.yaml --dbsnp-rsids aux_files/ensembl_to_hgnc.pkl --dbsnp-pos aux_files/hgnc_to_ensembl.pkl --writer-type $CURRENT_WRITER
           else
-            echo "No relevant changes detected for this writer. Skipping."
+              echo "Skipping unchanged writer: $CURRENT_WRITER"
           fi
-      
+          elif [ -n "$CHANGED_ADAPTERS" ] || [ "$CONFIG_CHANGED" == "true" ]; then
+          echo "Running changed adapters or config with writer: $CURRENT_WRITER"
+          poetry run python create_knowledge_graph.py --output-dir output --adapters-config config/test_config.yaml --dbsnp-rsids aux_files/ensembl_to_hgnc.pkl --dbsnp-pos aux_files/hgnc_to_ensembl.pkl --writer-type $CURRENT_WRITER
+          else
+          echo "No relevant changes detected for this writer. Skipping."
+          fi
